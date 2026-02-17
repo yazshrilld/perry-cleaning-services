@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { RequestHandler } from "express";
 
 import { cache, getters } from "../config";

@@ -4,7 +4,7 @@ import { Helpers } from "../types";
 import https from "https";
 import { getters } from "../config";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const agent = new https.Agent({
   rejectUnauthorized:  getters.getAppSecrets().REJECT_UNAUTHORIZED, // 🚨 Ignore SSL validation temporarily
 });
@@ -64,9 +64,9 @@ const createFetcher = ({
         return response.data;
       } catch (error) {
         // logger(error);[]
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const status = (error as any).response?.status;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const statusCode = (error as any).code;
 
         // If status is 500 or higher, call onError and throw the error
@@ -75,21 +75,21 @@ const createFetcher = ({
             if (onError) {
               onError(error); // Call the onError callback if provided
             }
-            // eslint-disable-next-line max-len
+             
             throw error; // Throw the error to be caught by the fetcher's onError handler
           }
 
           if (onError) {
             onError(error); // Call the onError callback if provided
           }
-          // eslint-disable-next-line max-len
+           
           throw error; // Throw the error to be caught by the fetcher's onError handler
         }
 
         return (
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           (error as any).response?.data || {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             error: (error as any).message + " An error occurred",
           }
         );

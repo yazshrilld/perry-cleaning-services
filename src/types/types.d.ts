@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 declare global {
   namespace Express {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
     interface Request {
       USER_ID?: string;
       USER_ROLES?: string[] | string;
@@ -68,7 +69,7 @@ declare namespace Helpers {
     method: Method;
     url: string;
     data?: Record<string, unknown> | string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     params?: Record<string, any>;
     query?: Record<string, unknown>;
     timeout?: number;

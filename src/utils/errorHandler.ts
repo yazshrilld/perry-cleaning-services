@@ -1,4 +1,3 @@
-/* eslint-disable require-jsdoc */
 import { logger } from "netwrap";
 import { getFunctionName } from "./getFunctionName";
 

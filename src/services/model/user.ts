@@ -79,8 +79,9 @@ export const sanitize = (
   user: usersSchemaType,
 ): Omit<usersSchemaType, "password"> => {
   const userObj = typeof user.toObject === "function" ? user.toObject() : user;
-  const { password, ...safeUser } = userObj as usersSchemaType & {
+  const { password: removedPassword, ...safeUser } = userObj as usersSchemaType & {
     password?: string;
   };
-  return safeUser as Omit<usersSchemaType, "password">;
+  void removedPassword;
+  return safeUser as unknown as Omit<usersSchemaType, "password">;
 };

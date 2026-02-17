@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import { getters } from "../config";
-import { ObjectId } from "mongodb";
+// import { ObjectId } from "mongodb";
 
 export const generateAccessToken = async (
   payload: any,
@@ -37,28 +37,28 @@ export const generateAccessToken = async (
   threeDayLater.setDate(currentDate.getDate() + 3);
 
   // Save refresh token to MongoDB (like NestJS does)
-  const tokensToSave = [
-    {
-      token: refreshToken,
-      identifier: "REFRESH_TOKEN",
-      expires: threeDayLater,
-    },
-    {
-      token: accessToken,
-      identifier: "LOGIN_TOKEN",
-      expires: oneDayLater,
-    },
-  ];
+  // const tokensToSave = [
+  //   {
+  //     token: refreshToken,
+  //     identifier: "REFRESH_TOKEN",
+  //     expires: threeDayLater,
+  //   },
+  //   {
+  //     token: accessToken,
+  //     identifier: "LOGIN_TOKEN",
+  //     expires: oneDayLater,
+  //   },
+  // ];
 
-  const filteredTokensToSave = _provider
-    ? [
-        {
-          token: accessToken, // Assuming refreshToken is used for _provider
-          identifier: _provider,
-          expires: oneDayLater,
-        },
-      ]
-    : tokensToSave;
+  // const filteredTokensToSave = _provider
+  //   ? [
+  //     {
+  //       token: accessToken, // Assuming refreshToken is used for _provider
+  //       identifier: _provider,
+  //       expires: oneDayLater,
+  //     },
+  //   ]
+  //   : tokensToSave;
 
   // await Promise.all(
   //   filteredTokensToSave.map(({ token, identifier, expires }) =>

@@ -1,8 +1,6 @@
 import { HttpStatusCode, getters } from "../config";
 import {
-  createHttpError,
   CustomWinstonLogger,
-  errorHandler,
   responseObject,
 } from "../utils";
 import type { RequestHandler } from "express";
@@ -32,7 +30,7 @@ const createMessage: RequestHandler = async (req, res) => {
   let payload = null;
 
   try {
-    const { conversationId, content, attachments, tempId } = req.body;
+    const { tempId } = req.body;
 
     // TODO: Implement actual message creation logic
     // - Validate conversationId exists
@@ -81,8 +79,7 @@ const getMessages: RequestHandler = async (req, res) => {
   let payload = null;
 
   try {
-    const { conversationId } = req.params;
-    const { limit = 50, before, after } = req.query;
+    // const { limit = 50, before, after } = req.query;
 
     // TODO: Implement actual message fetching logic
     // - Validate conversationId

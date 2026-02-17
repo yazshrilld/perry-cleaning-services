@@ -2,7 +2,7 @@ import { constants } from "../constants";
 import { RouteHandler } from "../types/route";
 import { joinUrls } from "../utils";
 import controllers from "../controllers";
-import { verifyMiddleware } from "../middlewares";
+// import { verifyMiddleware } from "../middlewares";
 
 const serviceLoader: RouteHandler[] = [
   {

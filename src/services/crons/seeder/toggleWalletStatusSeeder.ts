@@ -1,6 +1,4 @@
 import { HttpStatusCode } from "../../../config";
-import { UserWalletModel, WalletModel } from "../../../models";
-import { ObjectId } from "mongodb";
 import { SeederResponse, ToggleWalletStatusInput } from "./types";
 
 
@@ -15,81 +13,16 @@ export const toggleWalletStatusSeeder = async (
 ): Promise<SeederResponse> => {
   const { walletIds, status } = input;
   try {
-    // Validate input
-    if (!walletIds || walletIds.length === 0) {
-      return {
-        status: false,
-        statusCode: HttpStatusCode.BadRequest,
-        message: "No wallet IDs provided",
-        payload: null,
-      };
-    }
-
-    let updatedWallets = 0;
-    let updatedUserWallets = 0;
-    const errors: string[] = [];
-
-    // Loop through each walletId
-    for (const walletId of walletIds) {
-      try {
-        // Validate ObjectId
-        if (!ObjectId.isValid(walletId)) {
-          errors.push(`Invalid wallet ID: ${walletId}`);
-          continue;
-        }
-
-        // Update the wallet status in the Wallet table
-        const walletUpdateResult =
-          await WalletModel.WalletModel.findOneAndUpdate(
-            { _id: new ObjectId(walletId) },
-            { $set: { status } },
-            { new: true },
-          ).lean();
-
-        if (!walletUpdateResult) {
-          errors.push(`Wallet with ID ${walletId} not found`);
-          continue;
-        }
-
-        updatedWallets++;
-
-        // Update all related UserWallet entries
-        const userWalletUpdateResult =
-          await UserWalletModel.UserWalletModel.updateMany(
-            { walletId: new ObjectId(walletId) },
-            { $set: { status } },
-          );
-
-        updatedUserWallets += userWalletUpdateResult.modifiedCount;
-      } catch (err) {
-        errors.push(
-          `Failed to update wallet ${walletId} or its user wallets: ${(err as Error).message}`,
-        );
-      }
-    }
-
-    if (updatedWallets === 0 && errors.length > 0) {
-      return {
-        status: false,
-        statusCode: HttpStatusCode.NotFound,
-        message: "No wallets were updated due to errors",
-        payload: {
-          updatedWallets,
-          updatedUserWallets,
-          errors,
-        },
-      };
-    }
-
+    void walletIds;
+    void status;
+    console.log(
+      "toggleWalletStatusSeeder is disabled: wallet models are not configured in this codebase.",
+    );
     return {
       status: true,
       statusCode: HttpStatusCode.OK,
-      message: `Wallet status seeding completed. Set status to ${status}`,
-      payload: {
-        updatedWallets,
-        updatedUserWallets,
-        errors,
-      },
+      message: "toggleWalletStatusSeeder is disabled",
+      payload: null,
     };
   } catch (err) {
     console.error("Error in toggleWalletStatusSeeder:", err);

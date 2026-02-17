@@ -10,5 +10,6 @@ export const getFunctionName = (): string => {
     }
   } catch (error) {
     return "unknown resource name";
+    console.log("Error getting function name:", (error as Error).message);
   }
 };

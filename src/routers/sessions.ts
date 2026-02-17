@@ -15,7 +15,7 @@ const serviceLoader: RouteHandler[] = [
     method: constants.urls.sessions.addSession().method,
     handlers: [verifyMiddleware.addSessionInput, controllers.sessions.addSession],
   },
-    {
+  {
     path: joinUrls([constants.urls.sessions.getSessions().path]),
     method: constants.urls.sessions.getSessions().method,
     handlers: [verifyMiddleware.validateVeiwAllInput, controllers.sessions.fectchSessions],

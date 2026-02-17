@@ -1,4 +1,4 @@
-/* eslint-disable camelcase */
+ 
 // import Joi, { ObjectSchema } from "joi";
 //import { constants } from "../constants";
 

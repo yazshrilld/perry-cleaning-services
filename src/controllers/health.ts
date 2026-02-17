@@ -63,15 +63,15 @@ const internopayEncryption: RequestHandler = async (req, res) => {
     CustomWinstonLogger("info", LogPayloadvalues, "encryption Request");
     return responseObject({ res, statusCode, message, payload });
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     statusCode =
       (error as any).status ||
       (error as any).response.data.status ||
       statusCode;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     message =
       errorHandler(error, null).message || (error as any).response?.data.error;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     payload = (error as any).response?.data || payload;
 
     let LogPayloadvalues = {
@@ -139,15 +139,15 @@ const internopayDEcryption: RequestHandler = async (req, res) => {
     payload = resPon;
     return responseObject({ res, statusCode, message, payload });
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     statusCode =
       (error as any).status ||
       (error as any).response.data.status ||
       statusCode;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     message =
       errorHandler(error, null).message || (error as any).response?.data.error;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     payload = (error as any).response?.data || payload;
     let LogPayloadvalues = {
       reqBody: req.body,

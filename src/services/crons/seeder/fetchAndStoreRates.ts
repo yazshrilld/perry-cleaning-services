@@ -1,85 +1,13 @@
 import { createFetcher } from "../../../utils";
 import { getters } from "../../../config";
-import { rateModel } from "../../../models";
 // make sure the path is correct
 import { logger } from "netwrap";
 
 // Fetch exchange rates and store/update them in the database
 const fetchAndStoreRates = async () => {
-  const MAJOR_CURRENCIES = [
-    "USD", // US Dollar
-    "EUR", // Euro (Europe)
-    "GBP", // British Pound (UK)
-    "CAD", // Canadian Dollar
-    // Add other major currencies as needed
-  ];
-  
-  // "JPY", // Japanese Yen
-  // "CHF", // Swiss Franc
-  // "CNY", // Chinese Yuan
-  // "AUD", // Australian Dollar
-  // "CAD", // Canadian Dollar
-  //    "GHS", // Ghanaian Cedi
-  logger("⏳ Starting scheduled rate fetch...");
-
-  try {
-   
-    // const paramsBody = { base: "USD", symbols: "" };
-    const paramsBody = { base: "NGN", symbols: "" };
-    const url = `${getters.getRapidApiResource().RATESSURL}latest`;
-    const fetcher = createFetcher({
-      headers: {
-        "Content-Type": "application/json",
-        "x-rapidapi-key": getters.getRapidApiResource().RATESSAPIKEY,
-        "x-rapidapi-host": getters.getRapidApiResource().RATESSAPIHOST,
-      },
-      method: "get",
-      url,
-      query: { ...paramsBody },
-      params: {},
-      data: {},
-      timeout: 60 * 9 * 1000,
-    });
-
-    const responseData = await fetcher.trigger();
-
-    const { base, rates } = responseData.payload;
-
-    logger(`⏳ Fetching feeds from ${url}...`);
-    logger(`⏳ Response data: ${JSON.stringify(responseData)}`);
-
-    // Filter rates to only major currencies
-    const filteredRates = Object.entries(rates).filter(([currency]) =>
-      MAJOR_CURRENCIES.includes(currency),
-    );
-    //console.log(filteredRates);
-    //  const operations = Object.entries(rates).map(async ([currency, value]) => {
-    const operations = filteredRates.map(async ([currency, value]) => {
-      const from = base;
-      const to = currency;
-      const rate = (value as any).toString();
-      const per = "1";
-
-      // Try to find existing rate
-      const existing = await rateModel.findRate({
-        from: { $regex: from, $options: "i" },
-        to: { $regex: to, $options: "i" }, // case-insensitive search
-      });
-
-      if (existing.status === true) {
-        await rateModel.updateRateById(existing.payload?._id, { rate, per });
-        logger(`🔁 Updated rate: ${from} to ${to} = ${rate}`);
-      } else {
-        await rateModel.saveRate({ from, to, rate, per });
-        logger(`✅ Created rate: ${from} to ${to} = ${rate}`);
-      }
-    });
-
-    await Promise.all(operations);
-    logger("✅ Completed scheduled rate job.");
-  } catch (error: any) {
-    logger(`❌ Error fetching or storing rates: ${error.message}`);
-  }
+  void createFetcher;
+  void getters;
+  logger("⏸ fetchAndStoreRates is disabled: no rates model is configured.");
 };
 
 export { fetchAndStoreRates };

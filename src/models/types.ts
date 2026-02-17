@@ -1,5 +1,5 @@
 import { Helpers } from "../types";
-import { Document, ObjectId } from "mongoose";
+import { Document } from "mongoose";
 
 export type FindInfoParams = {
   orderBy?: string;
