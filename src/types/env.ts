@@ -40,5 +40,6 @@ export type Env = {
   APPCODE:string;
   APPSECRET:string;
   APP_DESCRIPTION:string;
+  APP_NAME:string;
   SHOULDENCRYPTRESPONSE:boolean;
 };

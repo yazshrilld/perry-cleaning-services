@@ -43,87 +43,6 @@ fs.mkdirSync(path.dirname(tempFile), { recursive: true });
 
 const normalizePath = (p: string) => p.replace(/^\/+/, "").replace(/\/+$/, "");
 
-const isEncryptedRequestRoute = (swaggerPath: string) =>
-  /\/auth\/login$|\/auth\/register$/.test(swaggerPath);
-
-const isEncryptHelperRoute = (swaggerPath: string) =>
-  /\/health\/encrypt$/.test(swaggerPath);
-
-const isDecryptHelperRoute = (swaggerPath: string) =>
-  /\/health\/decrypt$/.test(swaggerPath);
-
-const encryptedRequestSchema = {
-  type: "object",
-  properties: {
-    textData: {
-      type: "string",
-      description: "Encrypted payload as text",
-    },
-  },
-  required: ["textData"],
-  additionalProperties: false,
-};
-
-const encryptHelperSchema = {
-  type: "object",
-  description: "Plain JSON payload to encrypt (any object).",
-  additionalProperties: true,
-};
-
-const decryptHelperSchema = {
-  type: "object",
-  properties: {
-    textData: {
-      type: "string",
-      description: "Encrypted payload returned by /health/encrypt",
-    },
-  },
-  required: ["textData"],
-  additionalProperties: false,
-};
-
-const toSwaggerSchemaYaml = (schema: any) =>
-  JSON.stringify(schema, null, 2)
-    .split("\n")
-    .map((line) => ` *             ${line}`)
-    .join("\n");
-
-const exampleValueForSchema = (schema: any): any => {
-  if (!schema || typeof schema !== "object") return "string";
-  if (schema.example !== undefined) return schema.example;
-  switch (schema.type) {
-  case "string":
-    return "string";
-  case "integer":
-  case "number":
-    return 0;
-  case "boolean":
-    return true;
-  case "array":
-    return [exampleValueForSchema(schema.items || { type: "string" })];
-  case "object": {
-    const obj: Record<string, any> = {};
-    const props = schema.properties || {};
-    for (const [key, propSchema] of Object.entries(props)) {
-      obj[key] = exampleValueForSchema(propSchema);
-    }
-    return obj;
-  }
-  default:
-    return "string";
-  }
-};
-
-const buildExampleFromSwaggerSchema = (schema: any): string | null => {
-  if (!schema || typeof schema !== "object") return null;
-  if (schema.type !== "object" || !schema.properties) return null;
-  const exampleObject: Record<string, any> = {};
-  for (const [key, propSchema] of Object.entries(schema.properties)) {
-    exampleObject[key] = exampleValueForSchema(propSchema);
-  }
-  return JSON.stringify(exampleObject, null, 2);
-};
-
 const findMatchingRoute = (path: string, method: string) => {
   const normPath = normalizePath(path);
   for (const router of allRouters) {
@@ -187,15 +106,61 @@ const generateSwaggerComments = (): string => {
             .join("")}`;
         }
 
-        // 🔍 Detect Joi middleware by name
-        let requestBodySection = "";
-        let foundSchema = false;
-        let joiSwaggerSchema: any | null = null;
-        console.log(handlers, "handlers");
         // Filter out only valid function handlers
         const validHandlers = handlers.filter(
           (h: any) => typeof h === "function",
         );
+
+        // Check for header-based middlewares
+        const headerMiddlewares = {
+          clientAuthentication: ["client-id"],
+          tokenAuthentication: ["authorization"],
+          apiKeyAuthentication: ["x-api-key"],
+        };
+
+        // Detect header parameters from middleware names
+        let headerParams = "";
+        for (const handler of validHandlers) {
+          const name =
+            handler.name ||
+            Object.keys(verifyMiddleware || {}).find(
+              (k) =>
+                verifyMiddleware[k as keyof typeof verifyMiddleware] ===
+                handler,
+            ) ||
+            "";
+
+          // Check if this middleware requires headers
+          Object.entries(headerMiddlewares).forEach(
+            ([middlewareName, headers]) => {
+              if (name.toLowerCase().includes(middlewareName.toLowerCase())) {
+                headers.forEach((headerName) => {
+                  headerParams += `
+ *       - in: header
+ *         name: ${headerName}
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ${headerName.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase())}`;
+                });
+              }
+            },
+          );
+        }
+
+        // Add header parameters to existing parameters section
+        if (headerParams) {
+          if (parametersSection) {
+            parametersSection += headerParams;
+          } else {
+            parametersSection = `parameters:${headerParams}`;
+          }
+        }
+
+        // 🔍 Detect Joi middleware by name
+        let requestBodySection = "";
+        let foundSchema = false;
+        console.log(handlers, "handlers");
 
         console.log(validHandlers, "validHandlers");
         if (validHandlers.length === 0) {
@@ -244,7 +209,6 @@ const generateSwaggerComments = (): string => {
                 if (swaggerSchema) {
                   logger(`   🧾 Successfully converted Joi schema for ${name}`);
                   foundSchema = true;
-                  joiSwaggerSchema = swaggerSchema;
 
                   if (method === "get") {
                     // For GET requests, convert schema properties to query parameters
@@ -276,12 +240,22 @@ const generateSwaggerComments = (): string => {
                     }
                   } else {
                     // For POST/PUT/DELETE requests, generate requestBody
-                    const schemaYaml = toSwaggerSchemaYaml(swaggerSchema);
+                    const schemaYaml = JSON.stringify(swaggerSchema, null, 2)
+                      .split("\n")
+                      .map((line) => ` *             ${line}`)
+                      .join("\n");
 
                     const isMultipart = multipartRoutes[name] === true;
                     const contentType = isMultipart
                       ? "multipart/form-data"
                       : "application/json";
+
+                    const textPlainSection = isMultipart
+                      ? ""
+                      : `
+ *         text/plain:
+ *           schema:
+ *             type: string`;
 
                     requestBodySection = `
  *     requestBody:
@@ -289,7 +263,7 @@ const generateSwaggerComments = (): string => {
  *       content:
  *         ${contentType}:
  *           schema:
-${schemaYaml}`;
+${schemaYaml}${textPlainSection}`;
                   }
                   break;
                 } else {
@@ -308,58 +282,6 @@ ${schemaYaml}`;
 
           if (!foundSchema) {
             logger(`   ⚠️ No Joi schema detected for ${fullPath}`);
-          }
-
-          if (isEncryptHelperRoute(swaggerPath)) {
-            const schemaYaml = toSwaggerSchemaYaml(encryptHelperSchema);
-            requestBodySection = `
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
-${schemaYaml}`;
-          }
-
-          if (isDecryptHelperRoute(swaggerPath)) {
-            const schemaYaml = toSwaggerSchemaYaml(decryptHelperSchema);
-            requestBodySection = `
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
-${schemaYaml}`;
-          }
-
-          if (isEncryptedRequestRoute(swaggerPath)) {
-            const schemaYaml = toSwaggerSchemaYaml(encryptedRequestSchema);
-            const exampleJson = joiSwaggerSchema
-              ? buildExampleFromSwaggerSchema(joiSwaggerSchema)
-              : null;
-            const plainSchemaDescription = joiSwaggerSchema
-              ? `\n *       description: |\n *         Plain (unencrypted) payload schema:\n${JSON.stringify(
-                joiSwaggerSchema,
-                null,
-                2,
-              )
-                .split("\n")
-                .map((line) => ` *         ${line}`)
-                .join("\n")}`
-              : "";
-            const exampleDescription = exampleJson
-              ? `\n *         \n *         Copy-ready example (encrypt this object):\n${exampleJson
-                .split("\n")
-                .map((line) => ` *         ${line}`)
-                .join("\n")}`
-              : "";
-            requestBodySection = `
- *     requestBody:
- *       required: true${plainSchemaDescription}${exampleDescription}
- *       content:
- *         application/json:
- *           schema:
-${schemaYaml}`;
           }
 
           const finalParametersSection = parametersSection
@@ -414,10 +336,9 @@ export const setupAutoSwagger = (app: Express) => {
     definition: {
       openapi: "3.0.0",
       info: {
-        title: `${getters.getAppSecrets().APP_DESCRIPTION} API Documentation`,
+        title: `${getters.getAppSecrets().APP_NAME} API Documentation`,
         version: "1.0.0",
-        description:
-          "Auto-generated API documentation (routes from constants/urls.ts + Joi schema from routers)",
+        description: `${getters.getAppSecrets().APP_DESCRIPTION}`,
       },
       components: {
         securitySchemes: {
