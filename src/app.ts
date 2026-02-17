@@ -33,6 +33,7 @@ const allowedOrigins = [
   "http://localhost:4002",
   "http://localhost:8056",
   "http://localhost:8057",
+  "https://perry-cleaning-services.onrender.com/api/perrycleans/health/encrypt",
 ];
 
 app.use(
