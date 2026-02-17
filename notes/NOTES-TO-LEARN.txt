@@ -1,0 +1,4 @@
+THINGS TO LEARN WHILE I LEARN OTHERS
+
+1. Learn about the allowed roles in hasPermission.ts
+2. Learn about the 

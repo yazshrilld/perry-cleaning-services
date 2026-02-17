@@ -1,0 +1,699 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "localhost console Portal API for GMART Staging Environment API Documentation",
+    "version": "1.0.0",
+    "description": "Auto-generated API documentation (routes from constants/urls.ts + Joi schema from routers)"
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "EncryptedRequest": {
+        "type": "object",
+        "properties": {
+          "textData": {
+            "type": "string",
+            "description": "Encrypted payload in the format ciphertext;base64IV"
+          }
+        },
+        "required": ["textData"],
+        "additionalProperties": false
+      },
+      "EncryptedResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "number" },
+          "encrypted": { "type": "boolean" },
+          "textData": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["encrypted", "textData"]
+      },
+      "StandardResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "number" },
+          "message": { "type": "string" },
+          "payload": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean" },
+          "code": { "type": "number" },
+          "message": { "type": "string" },
+          "payload": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "username": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "role": { "type": "string" },
+          "roles": { "type": "array", "items": { "type": "string" } },
+          "lastLogin": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "emailOrUsername": { "type": "string" },
+          "password": { "type": "string" }
+        },
+        "required": ["emailOrUsername", "password"],
+        "additionalProperties": false
+      },
+      "LoginResponsePayload": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/User" }
+        },
+        "required": ["token", "user"]
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "password": { "type": "string", "minLength": 6 },
+          "role": { "type": "string" }
+        },
+        "required": [
+          "username",
+          "firstName",
+          "lastName",
+          "email",
+          "phone",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "RegisterResponsePayload": {
+        "type": "object",
+        "properties": {
+          "user": { "$ref": "#/components/schemas/User" }
+        },
+        "required": ["user"]
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "health",
+      "description": "Service health and encryption helpers"
+    },
+    { "name": "auth", "description": "Authentication and user bootstrap" },
+    { "name": "sessions", "description": "Session management" },
+    { "name": "messages", "description": "Messaging endpoints" }
+  ],
+  "paths": {
+    "/api/perrycleans/health/check": {
+      "get": {
+        "summary": "check",
+        "tags": ["health"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/perrycleans/health/encrypt": {
+      "post": {
+        "summary": "encrytData",
+        "tags": ["health"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Plain JSON payload to encrypt (any object).",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StandardResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/perrycleans/health/decrypt": {
+      "post": {
+        "summary": "decryptData",
+        "tags": ["health"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EncryptedRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StandardResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/perrycleans/sessions/check": {
+      "get": {
+        "summary": "check",
+        "tags": ["sessions"],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    { "$ref": "#/components/schemas/StandardResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/perrycleans/sessions/add": {
+      "post": {
+        "summary": "addSession",
+        "tags": ["sessions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "attachmentId": {
+                    "type": "string"
+                  },
+                  "conversationId": {
+                    "type": "string"
+                  },
+                  "businessId": {
+                    "type": "string"
+                  },
+                  "messageId": {
+                    "type": "string"
+                  },
+                  "fileName": {
+                    "type": "string"
+                  },
+                  "fileType": {
+                    "type": "string"
+                  },
+                  "fileSize": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  },
+                  "storageProvider": {
+                    "type": "string",
+                    "enum": ["s3", "cloudflare_r2"]
+                  },
+                  "storagePath": {
+                    "type": "string"
+                  },
+                  "publicUrl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "uploadedBy": {
+                    "type": "string"
+                  },
+                  "uploadedByType": {
+                    "type": "string",
+                    "enum": ["customer", "agent"]
+                  },
+                  "scanStatus": {
+                    "type": "string",
+                    "enum": ["pending", "clean", "infected"]
+                  }
+                },
+                "required": ["conversationId", "businessId"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    { "$ref": "#/components/schemas/StandardResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/perrycleans/sessions/{conversationId}": {
+      "get": {
+        "summary": "getSessions",
+        "tags": ["sessions"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "conversationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    { "$ref": "#/components/schemas/StandardResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/perrycleans/messages/check": {
+      "get": {
+        "summary": "check",
+        "tags": ["messages"],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    { "$ref": "#/components/schemas/StandardResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/perrycleans/messages/save": {
+      "post": {
+        "summary": "createMessage",
+        "tags": ["messages"],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    { "$ref": "#/components/schemas/StandardResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/perrycleans/messages/{conversationId}": {
+      "get": {
+        "summary": "getMessages",
+        "tags": ["messages"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "conversationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    { "$ref": "#/components/schemas/StandardResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/perrycleans/messages/{messageId}": {
+      "patch": {
+        "summary": "updateMessageStatus",
+        "tags": ["messages"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "messageId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "messageId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    { "$ref": "#/components/schemas/StandardResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/perrycleans/auth/check": {
+      "get": {
+        "summary": "check",
+        "tags": ["auth"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/perrycleans/auth/login": {
+      "post": {
+        "summary": "login",
+        "tags": ["auth"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "Plain (unencrypted) payload schema: LoginRequest. Encrypt the JSON and send as textData.",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EncryptedRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/StandardResponse" },
+                        {
+                          "properties": {
+                            "payload": {
+                              "$ref": "#/components/schemas/LoginResponsePayload"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/perrycleans/auth/register": {
+      "post": {
+        "summary": "register",
+        "tags": ["auth"],
+        "requestBody": {
+          "required": true,
+          "description": "Plain (unencrypted) payload schema: RegisterRequest. Encrypt the JSON and send as textData.",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EncryptedRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/EncryptedResponse" },
+                    {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/StandardResponse" },
+                        {
+                          "properties": {
+                            "payload": {
+                              "$ref": "#/components/schemas/RegisterResponsePayload"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

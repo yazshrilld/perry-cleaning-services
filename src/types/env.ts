@@ -1,0 +1,44 @@
+export type StringValue =
+  `${number}${"ms" | "s" | "m" | "h" | "d" | "w" | "y"}`;
+
+export type Env = {
+  NODE_ENV: "production" | "staging" | "development";
+  CURRENT_LANGUAGE: "en";
+  APP_PORT: string;
+  DATABASE_URI: string;
+  jwtSecretKey: string;
+  jwtVerificationTokenSecret: string;
+  expireTime: number | StringValue | undefined;
+  refreshExpireTime: number | StringValue | undefined;
+  postgressDBUrl: string;
+  dialect: string;
+  POOL_MAX: string;
+  POOL_MIN: string;
+  POOL_ACQUIRE: string;
+  POOL_IDLE: string;
+  appAESInSec: string;
+  appAESInV: string;
+  snederEmail: string;
+  mailHost: string;
+  mailUsername: string;
+  mailPassword: string;
+  EDGE_RUNTIME: string;
+  OPENAI_API_KEY: string;
+  AI_TEMP: string;
+  AI_MAX_TOKENS: string;
+  OPENAI_API_ORG: string;
+  googleClientId: string;
+  googleClientSecret: string;
+  googleRedirectUrl: string;
+  BASEPATH: string; 
+  bccEmail: string;
+  ccEmail: string;
+  operationEmail: string;
+  mailSentName: string;
+  ASSETSBASEPATH: string;
+  REJECT_UNAUTHORIZED: boolean;
+  APPCODE:string;
+  APPSECRET:string;
+  APP_DESCRIPTION:string;
+  SHOULDENCRYPTRESPONSE:boolean;
+};

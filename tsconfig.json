@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "target": "esnext",
+    "module": "CommonJS",
+    "strict": true,
+    "jsx": "preserve",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "isolatedModules": true,
+    // "noImplicitAny": true,
+    // "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "sourceMap": true,
+
+    "outDir": "./build", // or your preferred directory
+    "rootDir": "./src", // ensure this matches where your source code lives
+    "paths": {
+      "@/*": ["./src/*"],
+      "@config": ["./src/config"],
+      "@types": ["./src/types"],
+      "@constants": ["./src/constants"],
+      "@utils": ["./src/utils"],
+      "@controllers": ["./src/controllers"],
+      "@routers": ["./src/routers"]
+    },
+    "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "*.d.ts"
+  ],
+  "exclude": ["node_modules", "generate-service.ts", "generate-service.js"]
+}

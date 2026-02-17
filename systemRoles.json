@@ -1,0 +1,43 @@
+
+{
+    "systemAdminRoles": [
+        {
+            "id": 1,
+            "name": "ADMIN"
+        },
+        {
+            "id": 2,
+            "name": "SUPERADMIN"
+        },
+        {
+            "id": 3,
+            "name": "CUSTOMER"
+        },
+        {
+            "id": 4,
+            "name": "GOV"
+        },
+        {
+            "id": 5,
+            "name": "INITIATOR"
+        },
+        {
+            "id": 6,
+            "name": "APPROVER"
+        }
+    ],
+    "customerAdminRoles": [
+        {
+            "id": 1,
+            "name": "CUSTOMER"
+        },
+        {
+            "id": 2,
+            "name": "INITIATOR"
+        },
+        {
+            "id": 3,
+            "name": "APPROVER"
+        }
+    ]
+}
