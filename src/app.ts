@@ -26,6 +26,11 @@ import { setupAutoSwagger } from "./middlewares/setupAutoSwagger";
 // import { fetchAndStoreFeeds } from "./crons/seeder";
 
 const app = express();
+const envAllowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
   "http://192.168.0.104:8006",
   "http://localhost:3000",
@@ -33,13 +38,15 @@ const allowedOrigins = [
   "http://localhost:4002",
   "http://localhost:8056",
   "http://localhost:8057",
-  "https://perry-cleaning-services.onrender.com/api/perrycleans/health/encrypt",
-];
+  "https://perry-cleaning-services.onrender.com",
+  ...envAllowedOrigins,
+].map((origin) => origin.replace(/\/$/, ""));
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      const normalizedOrigin = origin?.replace(/\/$/, "");
+      if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
