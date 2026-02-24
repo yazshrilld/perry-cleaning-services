@@ -305,6 +305,13 @@
  *   post:
  *     summary: login
  *     tags: [auth]
+ *     parameters:
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Signature
  *     
  *     requestBody:
  *       required: true
@@ -364,6 +371,13 @@
  *   post:
  *     summary: register
  *     tags: [auth]
+ *     parameters:
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Signature
  *     
  *     requestBody:
  *       required: true

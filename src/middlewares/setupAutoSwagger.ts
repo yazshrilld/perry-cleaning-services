@@ -187,15 +187,64 @@ const generateSwaggerComments = (): string => {
             .join("")}`;
         }
 
-        // 🔍 Detect Joi middleware by name
-        let requestBodySection = "";
-        let foundSchema = false;
+       
         let joiSwaggerSchema: any | null = null;
         console.log(handlers, "handlers");
         // Filter out only valid function handlers
         const validHandlers = handlers.filter(
           (h: any) => typeof h === "function",
         );
+    // Check for header-based middlewares
+        const headerMiddlewares = {
+          clientAuthentication: ["client-id"],
+          tokenAuthentication: ["authorization"],
+          signatureProtected:["signature"],
+          apiKeyAuthentication: ["x-api-key"],
+        };
+
+           // Detect header parameters from middleware names
+        let headerParams = "";
+        for (const handler of validHandlers) {
+          const name =
+            handler.name ||
+            Object.keys(verifyMiddleware || {}).find(
+              (k) =>
+                verifyMiddleware[k as keyof typeof verifyMiddleware] ===
+                handler,
+            ) ||
+            "";
+
+          // Check if this middleware requires headers
+          Object.entries(headerMiddlewares).forEach(
+            ([middlewareName, headers]) => {
+              if (name.toLowerCase().includes(middlewareName.toLowerCase())) {
+                headers.forEach((headerName) => {
+                  headerParams += `
+ *       - in: header
+ *         name: ${headerName}
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ${headerName.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase())}`;
+                });
+              }
+            },
+          );
+        }
+
+        // Add header parameters to existing parameters section
+        if (headerParams) {
+          if (parametersSection) {
+            parametersSection += headerParams;
+          } else {
+            parametersSection = `parameters:${headerParams}`;
+          }
+        }
+
+        // 🔍 Detect Joi middleware by name
+        let requestBodySection = "";
+        let foundSchema = false;
+        console.log(handlers, "handlers");
 
         console.log(validHandlers, "validHandlers");
         if (validHandlers.length === 0) {
