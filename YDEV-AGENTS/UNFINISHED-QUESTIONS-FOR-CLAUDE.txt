@@ -1,0 +1,5 @@
+## 25/01/2026
+
+1. What is res.send, res.locals, what are these objects inside of res, how do they come about ? I am seeing this being used inside of captureResponseMiddleware.ts and this is why I am asking.
+2. The hasPermission, you mentioned after authentication, is it run at the point of response or at the point of login, or where is it run first?
+3. 

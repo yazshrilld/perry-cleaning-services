@@ -1,37 +1,36 @@
 // import * as crypto from "crypto";
 import * as cryptoJs from "crypto-js";
 
-
-
 function getPool(type: string) {
   let pool;
   switch (type) {
-  case "pasgenerate":
-    pool = "0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    break;
-  case "alnum":
-    pool = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    break;
-  case "alpha":
-    pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    break;
-  case "hexdec":
-    pool = "0123456789abcdef";
-    break;
-  case "numeric":
-    pool = "0123456789";
-    break;
-  case "nozero":
-    pool = "123456789";
-    break;
-  case "distinct":
-    pool = "2345679ACDEFHJKLMNPRSTUVWXYZ";
-    break;
-  default:
-    pool = type;
-    break;
+    case "pasgenerate":
+      pool =
+        "0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      break;
+    case "alnum":
+      pool = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      break;
+    case "alpha":
+      pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      break;
+    case "hexdec":
+      pool = "0123456789abcdef";
+      break;
+    case "numeric":
+      pool = "0123456789";
+      break;
+    case "nozero":
+      pool = "123456789";
+      break;
+    case "distinct":
+      pool = "2345679ACDEFHJKLMNPRSTUVWXYZ";
+      break;
+    default:
+      pool = type;
+      break;
   }
-  
+
   return pool;
 }
 
@@ -40,7 +39,7 @@ function pad(number: number, length: number) {
   while (str.length < length) {
     str = "0" + str;
   }
-  
+
   return str;
 }
 
@@ -51,8 +50,8 @@ const YYYYMMDDHHMMSS = function (date: Date) {
   // const hh = pad(date.getHours(), 2);
   // const mm = pad(date.getMinutes(), 2);
   // const ss = pad(date.getSeconds(), 2);
-  
-  return yyyy+MM+dd ;
+
+  return yyyy + MM + dd;
 };
 
 async function randomChar(length: number, type: string) {
@@ -64,9 +63,6 @@ async function randomChar(length: number, type: string) {
   }
   return result;
 }
- 
-
-
 
 const getTimeBasedSignatureString = (
   date: Date,
@@ -105,13 +101,11 @@ const SIGNATURE = async (
   return hash;
 };
 
-const  transactionId=async(clientID: string)=> {
-  const  d = new Date();
-  const raaa =await randomChar(12, "numeric");
-  const requestID = clientID + YYYYMMDDHHMMSS(d) +raaa ;
+const transactionId = async (clientID: string) => {
+  const d = new Date();
+  const raaa = await randomChar(12, "numeric");
+  const requestID = clientID + YYYYMMDDHHMMSS(d) + raaa;
   return requestID;
 };
 
-export {
-  SIGNATURE,transactionId
-};
+export { SIGNATURE, transactionId };

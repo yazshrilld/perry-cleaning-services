@@ -1,4 +1,3 @@
-// src/swagger/swagger-auto-routes.ts
 import { Express } from "express";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
@@ -7,20 +6,18 @@ import fs from "fs";
 import { urls } from "../constants/urls";
 import { getters } from "../config";
 import { getSwaggerSchemaFromJoi } from "../utils";
-import { verifyMiddleware } from "../middlewares"; // ✅ fix import path
+import { verifyMiddleware } from "../middlewares";
 import { logger } from "netwrap";
 import { multipartRoutes } from "../utils/validate";
 import { joiSchemasMap } from "../utils/joiSchemasMap";
 
-logger("🧠 [swagger-auto-routes] Module loaded.");
+logger("[swagger-auto-routes] Module loaded.");
 const basePath = `/${getters.getAppSecrets().BASEPATH}`;
-/**
- * Dynamically import all route modules from routers directory
- */
+
 const routersDir = path.resolve(__dirname, "../routers");
 const allRouters: any[] = [];
 
-logger(`📂 Reading routers from: ${routersDir}`);
+logger(`Reading routers from: ${routersDir}`);
 
 fs.readdirSync(routersDir).forEach((file) => {
   if (
@@ -33,7 +30,7 @@ fs.readdirSync(routersDir).forEach((file) => {
       Object.values(routeModule).find((v) => Array.isArray(v));
     if (routerExport) {
       allRouters.push(routerExport);
-      logger(`✅ Loaded router: ${file}`);
+      logger(`Loaded router: ${file}`);
     }
   }
 });
@@ -43,8 +40,88 @@ fs.mkdirSync(path.dirname(tempFile), { recursive: true });
 
 const normalizePath = (p: string) => p.replace(/^\/+/, "").replace(/\/+$/, "");
 
-const findMatchingRoute = (path: string, method: string) => {
-  const normPath = normalizePath(path);
+const isEncryptedRequestRoute = (swaggerPath: string) =>
+  /\/auth\/login$|\/auth\/register$/.test(swaggerPath);
+
+const isEncryptHelperRoute = (swaggerPath: string) =>
+  /\/health\/encrypt$/.test(swaggerPath);
+const isDecryptHelperRoute = (swaggerPath: string) =>
+  /\/health\/decrypt$/.test(swaggerPath);
+
+const encryptedRequestSchema = {
+  type: "object",
+  properties: {
+    textData: {
+      type: "string",
+      description: "Encrypted payload as text",
+    },
+  },
+  required: ["textData"],
+  additionalProperties: false,
+};
+
+const encryptHelperSchema = {
+  type: "object",
+  description: "Plain JSON payload to encrypt (any object).",
+  additionalProperties: true,
+};
+
+const decryptHelperSchema = {
+  type: "object",
+  properties: {
+    textData: {
+      type: "string",
+      description: "Encrypted payload returned by /health/encrypt",
+    },
+  },
+  required: ["textData"],
+  additionalProperties: false,
+};
+
+const toSwaggerSchemaYaml = (schema: any) =>
+  JSON.stringify(schema, null, 2)
+    .split("\n")
+    .map((line) => ` *             ${line}`)
+    .join("\n");
+
+const exampleValueForSchema = (schema: any): any => {
+  if (!schema || typeof schema !== "object") return "string";
+  if (schema.example !== undefined) return schema.example;
+  switch (schema.type) {
+    case "string":
+      return "string";
+    case "integer":
+    case "number":
+      return 0;
+    case "boolean":
+      return true;
+    case "array":
+      return [exampleValueForSchema(schema.items || { type: "string" })];
+    case "object": {
+      const obj: Record<string, any> = {};
+      const props = schema.properties || {};
+      for (const [key, propSchema] of Object.entries(props)) {
+        obj[key] = exampleValueForSchema(propSchema);
+      }
+      return obj;
+    }
+    default:
+      return "string";
+  }
+};
+
+const buildExampleFromSwaggerSchema = (schema: any): string | null => {
+  if (!schema || typeof schema !== "object") return null;
+  if (schema.type !== "object" || !schema.properties) return null;
+  const exampleObject: Record<string, any> = {};
+  for (const [key, propSchema] of Object.entries(schema.properties)) {
+    exampleObject[key] = exampleValueForSchema(propSchema);
+  }
+  return JSON.stringify(exampleObject, null, 2);
+};
+
+const findMatchingRoute = (pathValue: string, method: string) => {
+  const normPath = normalizePath(pathValue);
   for (const router of allRouters) {
     const match = router.find(
       (r: any) =>
@@ -57,15 +134,16 @@ const findMatchingRoute = (path: string, method: string) => {
 };
 
 const generateSwaggerComments = (): string => {
-  logger("\n🟢 Starting Swagger comment generation...\n");
+  logger("Starting Swagger comment generation...");
   const comments: string[] = [];
 
   const processObject = (obj: any, parentTag?: string) => {
-    logger(`🔸 Processing object for tag: ${parentTag || "root"}`);
+    logger(`Processing object for tag: ${parentTag || "root"}`);
     if (!obj) {
-      console.warn("⚠️ Skipping invalid object in setupAutoSwagger:", obj);
+      console.warn("Skipping invalid object in setupAutoSwagger:", obj);
       return;
     }
+
     Object.entries(obj).forEach(([key, value]) => {
       if (typeof value === "function") {
         const routeDef = value();
@@ -73,19 +151,18 @@ const generateSwaggerComments = (): string => {
         const swaggerPath = fullPath.replace(/:([a-zA-Z0-9_]+)/g, "{$1}");
         const method = (routeDef.method || "get").toLowerCase();
 
-        logger(
-          `\n🔹 Processing route: [${method.toUpperCase()}] ${swaggerPath}`,
-        );
+        logger(`Processing route: [${method.toUpperCase()}] ${swaggerPath}`);
         const matchedRoute = findMatchingRoute(routeDef.path, method);
 
         if (!matchedRoute) {
-          console.warn(`⚠️ No matching route found for ${swaggerPath}`);
+          console.warn(`No matching route found for ${swaggerPath}`);
           return;
         }
 
-        logger(`✅ Matched route path: ${matchedRoute.path}`);
         const handlers = matchedRoute.handlers || [];
-        logger(`🔹 Handlers count: ${handlers.length}`);
+        const validHandlers = handlers.filter(
+          (h: any) => typeof h === "function",
+        );
 
         const pathParams = Array.from(
           fullPath.matchAll(/:([a-zA-Z0-9_]+)/g),
@@ -106,49 +183,70 @@ const generateSwaggerComments = (): string => {
             .join("")}`;
         }
 
-        // Filter out only valid function handlers
-        const validHandlers = handlers.filter(
-          (h: any) => typeof h === "function",
-        );
-
-        // Check for header-based middlewares
         const headerMiddlewares = {
           clientAuthentication: ["client-id"],
           tokenAuthentication: ["authorization"],
+          signatureProtected: ["signature"],
           apiKeyAuthentication: ["x-api-key"],
         };
 
-        // Detect header parameters from middleware names
-        let headerParams = "";
-        for (const handler of validHandlers) {
-          const name =
-            handler.name ||
-            Object.keys(verifyMiddleware || {}).find(
-              (k) =>
-                verifyMiddleware[k as keyof typeof verifyMiddleware] ===
-                handler,
-            ) ||
-            "";
+        const getHandlerName = (handler: any) =>
+          handler.name ||
+          Object.keys(verifyMiddleware || {}).find(
+            (k) =>
+              verifyMiddleware[k as keyof typeof verifyMiddleware] === handler,
+          ) ||
+          "";
 
-          // Check if this middleware requires headers
+        const requiredHeaders = new Set<string>();
+        let requiresSignature = false;
+        let requiresBearer = false;
+
+        for (const handler of validHandlers) {
+          const name = getHandlerName(handler);
+          const lower = name.toLowerCase();
+
+          if (lower.includes("signatureprotected")) requiresSignature = true;
+          if (
+            lower.includes("general") ||
+            lower.includes("haspermission") ||
+            lower.includes("tokenauthentication")
+          ) {
+            requiresBearer = true;
+          }
+
           Object.entries(headerMiddlewares).forEach(
             ([middlewareName, headers]) => {
-              if (name.toLowerCase().includes(middlewareName.toLowerCase())) {
-                headers.forEach((headerName) => {
-                  headerParams += `
- *       - in: header
- *         name: ${headerName}
- *         required: true
- *         schema:
- *           type: string
- *         description: ${headerName.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase())}`;
-                });
+              if (lower.includes(middlewareName.toLowerCase())) {
+                headers.forEach((h) => requiredHeaders.add(h));
               }
             },
           );
         }
 
-        // Add header parameters to existing parameters section
+        if (requiresSignature) requiredHeaders.add("signature");
+        if (requiresBearer) requiredHeaders.add("authorization");
+
+        let headerParams = "";
+        requiredHeaders.forEach((headerName) => {
+          const description =
+            headerName === "signature"
+              ? "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
+              : headerName
+                  .replace(/-/g, " ")
+                  .replace(/^./, (c) => c.toUpperCase());
+
+          const yamlSafeDescription = JSON.stringify(description);
+
+          headerParams += `
+ *       - in: header
+ *         name: ${headerName}
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ${yamlSafeDescription}`;
+        });
+
         if (headerParams) {
           if (parametersSection) {
             parametersSection += headerParams;
@@ -157,147 +255,160 @@ const generateSwaggerComments = (): string => {
           }
         }
 
-        // 🔍 Detect Joi middleware by name
         let requestBodySection = "";
         let foundSchema = false;
-        console.log(handlers, "handlers");
+        let joiSwaggerSchema: any | null = null;
 
-        console.log(validHandlers, "validHandlers");
         if (validHandlers.length === 0) {
-          console.warn(`⚠️ No valid handlers found for ${matchedRoute.path}`);
+          console.warn(`No valid handlers found for ${matchedRoute.path}`);
         } else {
           for (const handler of validHandlers) {
-            //  if (typeof handler !== "function") {
-            //    console.warn(
-            //      `⚠️ Invalid handler in ${matchedRoute.path}: ${String(handler)}`,
-            //    );
-            //    continue;
-            //  }
-
-            console.log(handler);
-            const name =
-              handler.name ||
-              Object.keys(verifyMiddleware || {}).find(
-                (k) =>
-                  verifyMiddleware[k as keyof typeof verifyMiddleware] ===
-                  handler,
-              ) ||
-              "";
-
-            logger(`   🧩 Checking handler: "${name}"`);
-
-            if (!name) {
-              logger(
-                "   ⚠️ Handler is anonymous (arrow fn or inline). Skipping.",
-              );
-              continue;
-            }
+            const name = getHandlerName(handler);
+            if (!name) continue;
 
             const hasSchema = !!joiSchemasMap[name];
-            logger(
-              `🔎 joiSchemasMap has schema for "${name}"? ${hasSchema ? "✅ YES" : "❌ NO"}`,
-              {
-                isError: !hasSchema,
-              },
-            );
+            if (!hasSchema) continue;
 
-            if (hasSchema) {
-              logger(`   ✅ Found Joi schema for middleware: ${name}`);
-              const schemaFn = joiSchemasMap[name];
-              try {
-                const swaggerSchema = getSwaggerSchemaFromJoi(schemaFn);
-                if (swaggerSchema) {
-                  logger(`   🧾 Successfully converted Joi schema for ${name}`);
-                  foundSchema = true;
+            const schemaFn = joiSchemasMap[name];
+            try {
+              const swaggerSchema = getSwaggerSchemaFromJoi(schemaFn);
+              if (!swaggerSchema) continue;
 
-                  if (method === "get") {
-                    // For GET requests, convert schema properties to query parameters
-                    const queryParams = Object.entries(
-                      swaggerSchema.properties || {},
-                    )
-                      .map(([key, prop]: any) => {
-                        const required = swaggerSchema.required?.includes(key)
-                          ? "true"
-                          : "false";
-                        const escapedPattern = prop.pattern
-                          ? prop.pattern.replace(/\\/g, "\\\\")
-                          : null;
-                        return `
+              foundSchema = true;
+              joiSwaggerSchema = swaggerSchema;
+
+              if (method === "get") {
+                const queryParams = Object.entries(
+                  swaggerSchema.properties || {},
+                )
+                  .map(([fieldKey, prop]: any) => {
+                    const required = swaggerSchema.required?.includes(fieldKey)
+                      ? "true"
+                      : "false";
+                    const escapedPattern = prop.pattern
+                      ? prop.pattern.replace(/\\/g, "\\\\")
+                      : null;
+                    return `
  *       - in: query
- *         name: ${key}
+ *         name: ${fieldKey}
  *         required: ${required}
  *         schema:
  *           type: ${prop.type}${prop.format ? `\n *           format: ${prop.format}` : ""}${prop.minimum !== undefined ? `\n *           minimum: ${prop.minimum}` : ""}${prop.maximum !== undefined ? `\n *           maximum: ${prop.maximum}` : ""}${prop.minLength !== undefined ? `\n *           minLength: ${prop.minLength}` : ""}${prop.maxLength !== undefined ? `\n *           maxLength: ${prop.maxLength}` : ""}${escapedPattern ? `\n *           pattern: "${escapedPattern}"` : ""}`;
-                      })
-                      .join("");
+                  })
+                  .join("");
 
-                    if (queryParams) {
-                      if (parametersSection) {
-                        parametersSection += queryParams;
-                      } else {
-                        parametersSection = `parameters:${queryParams}`;
-                      }
-                    }
+                if (queryParams) {
+                  if (parametersSection) {
+                    parametersSection += queryParams;
                   } else {
-                    // For POST/PUT/DELETE requests, generate requestBody
-                    const schemaYaml = JSON.stringify(swaggerSchema, null, 2)
-                      .split("\n")
-                      .map((line) => ` *             ${line}`)
-                      .join("\n");
+                    parametersSection = `parameters:${queryParams}`;
+                  }
+                }
+              } else {
+                const schemaYaml = toSwaggerSchemaYaml(swaggerSchema);
+                const isMultipart = multipartRoutes[name] === true;
+                const contentType = isMultipart
+                  ? "multipart/form-data"
+                  : "application/json";
 
-                    const isMultipart = multipartRoutes[name] === true;
-                    const contentType = isMultipart
-                      ? "multipart/form-data"
-                      : "application/json";
-
-                    const textPlainSection = isMultipart
-                      ? ""
-                      : `
- *         text/plain:
- *           schema:
- *             type: string`;
-
-                    requestBodySection = `
+                requestBodySection = `
  *     requestBody:
  *       required: true
  *       content:
  *         ${contentType}:
  *           schema:
-${schemaYaml}${textPlainSection}`;
-                  }
-                  break;
-                } else {
-                  logger(
-                    `   ⚠️ getSwaggerSchemaFromJoi returned empty for ${name}`,
-                  );
-                }
-              } catch (err) {
-                console.error(
-                  `   ❌ Error generating schema for ${name}:`,
-                  err,
-                );
+${schemaYaml}`;
               }
+
+              break;
+            } catch (err) {
+              console.error(`Error generating schema for ${name}:`, err);
             }
           }
+        }
 
-          if (!foundSchema) {
-            logger(`   ⚠️ No Joi schema detected for ${fullPath}`);
-          }
+        if (!foundSchema) {
+          logger(`No Joi schema detected for ${fullPath}`);
+        }
 
-          const finalParametersSection = parametersSection
-            ? `${parametersSection}`
+        if (isEncryptHelperRoute(swaggerPath)) {
+          const schemaYaml = toSwaggerSchemaYaml(encryptHelperSchema);
+          requestBodySection = `
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+${schemaYaml}`;
+        }
+
+        if (isDecryptHelperRoute(swaggerPath)) {
+          const schemaYaml = toSwaggerSchemaYaml(decryptHelperSchema);
+          requestBodySection = `
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+${schemaYaml}`;
+        }
+
+        if (isEncryptedRequestRoute(swaggerPath)) {
+          const schemaYaml = toSwaggerSchemaYaml(encryptedRequestSchema);
+          const exampleJson = joiSwaggerSchema
+            ? buildExampleFromSwaggerSchema(joiSwaggerSchema)
+            : null;
+          const plainSchemaDescription = joiSwaggerSchema
+            ? `\n *       description: |\n *         Plain (unencrypted) payload schema:\n${JSON.stringify(
+                joiSwaggerSchema,
+                null,
+                2,
+              )
+                .split("\n")
+                .map((line) => ` *         ${line}`)
+                .join("\n")}`
             : "";
-          const finalRequestBodySection = requestBodySection
-            ? `${requestBodySection}`
+          const exampleDescription = exampleJson
+            ? `\n *         \n *         Copy-ready example (encrypt this object):\n${exampleJson
+                .split("\n")
+                .map((line) => ` *         ${line}`)
+                .join("\n")}`
             : "";
 
-          comments.push(`
+          requestBodySection = `
+ *     requestBody:
+ *       required: true${plainSchemaDescription}${exampleDescription}
+ *       content:
+ *         application/json:
+ *           schema:
+${schemaYaml}`;
+        }
+
+        const finalParametersSection = parametersSection
+          ? `${parametersSection}`
+          : "";
+        const finalRequestBodySection = requestBodySection
+          ? `${requestBodySection}`
+          : "";
+
+        let securitySection = "";
+        const securityLines: string[] = [];
+        if (requiresBearer) securityLines.push(" *       - bearerAuth: []");
+        if (requiresSignature)
+          securityLines.push(" *       - signatureAuth: []");
+        if (securityLines.length > 0) {
+          securitySection = `
+ *     security:
+${securityLines.join("\n")}`;
+        }
+
+        comments.push(`
 /**
  * @swagger
  * ${swaggerPath}:
  *   ${method}:
  *     summary: ${key}
- *     tags: [${parentTag || key}]${finalParametersSection ? `\n *     ${finalParametersSection}` : ""}${finalRequestBodySection ? `\n *     ${finalRequestBodySection}` : ""}
+ *     tags: [${parentTag || key}]${finalParametersSection ? `\n *     ${finalParametersSection}` : ""}${finalRequestBodySection ? `\n *     ${finalRequestBodySection}` : ""}${securitySection}
  *     responses:
  *       200:
  *         description: Success
@@ -307,30 +418,82 @@ ${schemaYaml}${textPlainSection}`;
  *         description: Unauthorized
  */
         `);
-        }
       } else if (typeof value === "object") {
-        logger(`🔹 Traversing into: ${key}`);
         processObject(value, key);
       }
     });
   };
 
   processObject(urls);
-  logger(`\n✅ Generated Swagger comments for ${comments.length} route(s)`);
+  logger(`Generated Swagger comments for ${comments.length} route(s)`);
   return comments.join("\n");
 };
 
-/**
- * ✅ Run generation at runtime (not import time)
- */
+// export const setupAutoSwagger = (app: Express) => {
+//   logger("Setting up Swagger auto-generation...");
+//   const generatedComments = generateSwaggerComments();
+//   fs.writeFileSync(tempFile, generatedComments);
+//   logger(`Swagger docs written to: ${tempFile}`);
+
+//   const swaggerRoute = `/${getters.getAppSecrets().BASEPATH}/api-docs`;
+
+//   const options = {
+//     definition: {
+//       openapi: "3.0.0",
+//       info: {
+//         title: `${getters.getAppSecrets().APP_DESCRIPTION} API Documentation`,
+//         version: "1.0.0",
+//         description:
+//           "Auto-generated API documentation (routes from constants/urls.ts + Joi schema from routers)",
+//       },
+//       components: {
+//         securitySchemes: {
+//           bearerAuth: {
+//             type: "http",
+//             scheme: "bearer",
+//             bearerFormat: "JWT",
+//           },
+//           signatureAuth: {
+//             type: "apiKey",
+//             in: "header",
+//             name: "signature",
+//             description:
+//               "Format: <sha512_hex>;<tags>. Hash is SHA512(institutionCode + yyMMddHHmm + secret) using UTC time.",
+//           },
+//         },
+//       },
+//       security: [{ bearerAuth: [] }],
+//     },
+//     apis: [tempFile],
+//   };
+
+//   const swaggerSpec = swaggerJSDoc(options);
+//   app.use(swaggerRoute, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+//   app.get(`${swaggerRoute}.json`, (_req, res) => {
+//     res.setHeader("Content-Type", "application/json");
+//     res.send(swaggerSpec);
+//   });
+
+//   const baseUrl = `http://${getters.getAppUrls().apiDocsUrl}`.replace(
+//     /\/+$/,
+//     "",
+//   );
+//   logger(`Swagger UI -> ${baseUrl}${swaggerRoute}`);
+//   logger(`Swagger JSON -> ${baseUrl}${swaggerRoute}.json`);
+// };
+
+
+
 export const setupAutoSwagger = (app: Express) => {
-  logger("\n🚀 Setting up Swagger auto-generation...");
+  logger("Setting up Swagger auto-generation...");
   const generatedComments = generateSwaggerComments();
   fs.writeFileSync(tempFile, generatedComments);
-  logger(`🟢 Swagger docs written to: ${tempFile}`);
+  logger(`Swagger docs written to: ${tempFile}`);
 
-  // const swaggerRoute = "/sdk/aop/api/v1/api-docs";
-  const swaggerRoute = `/${getters.getAppSecrets().BASEPATH}/api-docs`;
+  const basePath = `/${getters.getAppSecrets().BASEPATH}`;
+  const swaggerRoute = `${basePath}/api-docs`;
+  const signatureHelperPath = `${basePath}/health/generate-signature`;
 
   const options = {
     definition: {
@@ -347,6 +510,13 @@ export const setupAutoSwagger = (app: Express) => {
             scheme: "bearer",
             bearerFormat: "JWT",
           },
+          signatureAuth: {
+            type: "apiKey",
+            in: "header",
+            name: "signature",
+            description:
+              "Format: <sha512_hex>;<tags>. Hash is SHA512(institutionCode + yyMMddHHmm + secret) using UTC time.",
+          },
         },
       },
       security: [{ bearerAuth: [] }],
@@ -355,16 +525,61 @@ export const setupAutoSwagger = (app: Express) => {
   };
 
   const swaggerSpec = swaggerJSDoc(options);
-  app.use(swaggerRoute, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  app.use(
+    swaggerRoute,
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      swaggerOptions: {
+        requestInterceptor: async (req: any) => {
+          try {
+            const url = String(req?.url || "");
+
+            // Avoid signing swagger/docs/helper calls
+            if (
+              url.includes("/api-docs") ||
+              url.includes("/health/generate-signature")
+            ) {
+              return req;
+            }
+
+            req.headers = req.headers || {};
+
+            // If already manually set, keep it
+            if (req.headers.signature || req.headers.Signature) {
+              return req;
+            }
+
+            const sigRes = await fetch(signatureHelperPath, {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            });
+
+            if (!sigRes.ok) return req;
+
+            const sigJson = await sigRes.json();
+            const signature = sigJson?.payload?.signature;
+
+            if (signature) {
+              req.headers.signature = signature;
+            }
+          } catch (_e) {
+            // do not block swagger requests if signature helper fails
+          }
+
+          return req;
+        },
+      },
+    }),
+  );
+
   app.get(`${swaggerRoute}.json`, (_req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.send(swaggerSpec);
   });
 
-  const baseUrl = `http://${getters.getAppUrls().apiDocsUrl}`.replace(
-    /\/+$/,
-    "",
-  );
-  logger(`✅ Swagger UI  → ${baseUrl}${swaggerRoute}`);
-  logger(`✅ Swagger JSON → ${baseUrl}${swaggerRoute}.json`);
+  const baseUrl = `http://${getters.getAppUrls().apiDocsUrl}`.replace(/\/+$/, "");
+  logger(`Swagger UI -> ${baseUrl}${swaggerRoute}`);
+  logger(`Swagger JSON -> ${baseUrl}${swaggerRoute}.json`);
 };

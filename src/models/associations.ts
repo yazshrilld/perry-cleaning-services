@@ -1,10 +1,6 @@
-// import { userMigrate } from "./migration";
-import { UsersModel } from "./users"; 
+import { UsersModel } from "./users";
 
-
-
-
-export const setupAssociations = async() => {
+export const setupAssociations = async () => {
   UsersModel.schema.virtual("tokens", {
     ref: "VerificationToken", // The model to populate
     localField: "_id", // User's _id field
@@ -18,12 +14,8 @@ export const setupAssociations = async() => {
     foreignField: "companyId", // Field in the UserSchema that references Wallet
     justOne: true,
   });
- 
+
   // Enable virtuals in output
   UsersModel.schema.set("toObject", { virtuals: true });
   UsersModel.schema.set("toJSON", { virtuals: true });
-
-
-
-  //userMigrate.migrateIsPasswordChanged();
 };

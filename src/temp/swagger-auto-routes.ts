@@ -49,6 +49,22 @@
 
 /**
  * @swagger
+ * /api/perrycleans/health/generate-signature:
+ *   post:
+ *     summary: generateSignature
+ *     tags: [health]
+ *     responses:
+ *       200:
+ *         description: Success
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ */
+        
+
+/**
+ * @swagger
  * /api/perrycleans/sessions/check:
  *   get:
  *     summary: check
@@ -278,6 +294,13 @@
  *   post:
  *     summary: login
  *     tags: [auth]
+ *     parameters:
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
  *     
  *     requestBody:
  *       required: true
@@ -300,9 +323,8 @@
  *               ],
  *               "additionalProperties": false
  *             }
- *         text/plain:
- *           schema:
- *             type: string
+ *     security:
+ *       - signatureAuth: []
  *     responses:
  *       200:
  *         description: Success
@@ -319,6 +341,19 @@
  *   post:
  *     summary: register
  *     tags: [auth]
+ *     parameters:
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
+ *       - in: header
+ *         name: authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Authorization"
  *     
  *     requestBody:
  *       required: true
@@ -362,9 +397,9 @@
  *               ],
  *               "additionalProperties": false
  *             }
- *         text/plain:
- *           schema:
- *             type: string
+ *     security:
+ *       - bearerAuth: []
+ *       - signatureAuth: []
  *     responses:
  *       200:
  *         description: Success

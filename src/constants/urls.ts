@@ -5,6 +5,7 @@ export const urls = {
     check: () => routeCreator("check"),
     encrytData: () => routeCreator("encrypt", "post"),
     decryptData: () => routeCreator("decrypt", "post"),
+    generateSignature: () => routeCreator("generate-signature", "post"),
   },
   sessions: {
     check: () => routeCreator("check"),
