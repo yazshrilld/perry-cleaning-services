@@ -72,3 +72,31 @@ const UsersSchema = new Schema(
 );
 
 export const UsersModel = model<usersSchemaType>("Users", UsersSchema);
+
+// Users
+const anyUser = [{
+  username: "superadmin",
+  email: "admin@example.com",
+  password: "StagingSeedAdmin_ChangeMe_2026!",
+  role: "super_admin",
+},
+{
+  username: "jAkmel",
+  email: "jkmael24@ashiverb-security.com",
+  password: "Nolly@34r@",
+  role: "admin",
+},
+{
+  username: "bpelumi",
+  email: "bpaul@ashiverb-security.com",
+  password: "update@@#",
+  role: "customer",
+},
+{
+  username: "eSanusi",
+  email: "elmsatuel@nnu.com",
+  password: "aline@45uu.0",
+  role: "worker",
+}];
+
+// { "username": "eSanusi", "firstName": "Jaanai", "lastName": "Akmel", "email": "elmsatuel@ashiverb-security.com", "phone": "02133445678", "password": "cusT2@34r@", "role": "customer" }

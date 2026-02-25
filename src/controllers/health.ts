@@ -1,10 +1,11 @@
 import { costomencryDecryptInternalCRYPTOJS } from "../utils/costomencryDecryptInternalCRYPTOJS";
 import { HttpStatusCode, getters } from "../config";
 import {
-  createHttpError,
+   createHttpError,
   CustomWinstonLogger,
   errorHandler,
   responseObject,
+  SIGNATURE,
 } from "../utils";
 import type { RequestHandler } from "express";
 import moment from "moment"; 
@@ -172,10 +173,48 @@ const internopayDEcryption: RequestHandler = async (req, res) => {
   }
 };
 
+const generateRequestSignature: RequestHandler = async (_req, res) => {
+  let statusCode = 500;
+  let message = "Unable to generate request signature";
+  let payload: any = null;
+
+  try {
+    const env = (getters.getNodeEnv() || "").toLowerCase();
+    const allowed = ["development", "dev", "staging", "test"];
+    if (!allowed.includes(env)) {
+      return responseObject({
+        res,
+        statusCode: 403,
+        message: "Signature helper is disabled in production",
+      });
+    }
+
+    const { GETAPPCODE: appCode, GETAPPSECRET: secret } = getters.getAppSecrets();
+    const tags = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const signature = await SIGNATURE(appCode, secret, new Date(), tags);
+
+    statusCode = 200;
+    message = "Signature generated successfully";
+    payload = {
+      signature,
+      format: "<sha512_hex>;<tags>",
+      utcMinuteWindow: 1,
+    };
+
+    return responseObject({ res, statusCode, message, payload });
+  } catch (error) {
+    statusCode = (error as any)?.status || statusCode;
+    message = errorHandler(error, null).message || message;
+    return responseObject({ res, statusCode, message, payload });
+  }
+};
+
+
 export default {
   checkServiceHealth,
   internopayEncryption,
   internopayDEcryption,
+  generateRequestSignature,
 };
 
 

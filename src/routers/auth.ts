@@ -2,7 +2,12 @@ import { constants } from "../constants";
 import { RouteHandler } from "../types/route";
 import { joinUrls } from "../utils";
 import controllers from "../controllers";
-import { general, hasPermission, signatureProtected, verifyMiddleware } from "../middlewares";
+import {
+  general,
+  hasPermission,
+  signatureProtected,
+  verifyMiddleware,
+} from "../middlewares";
 import { rolePermissions } from "../types/functions";
 
 const serviceLoader: RouteHandler[] = [
@@ -14,7 +19,11 @@ const serviceLoader: RouteHandler[] = [
   {
     path: joinUrls([constants.urls.auth.login().path]),
     method: constants.urls.auth.login().method,
-    handlers: [signatureProtected,verifyMiddleware.loginInput, controllers.auth.login],
+    handlers: [
+      signatureProtected,
+      verifyMiddleware.loginInput,
+      controllers.auth.login,
+    ],
   },
   {
     path: joinUrls([constants.urls.auth.register().path]),
