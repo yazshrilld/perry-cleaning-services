@@ -4,6 +4,9 @@ import {
   loginInputValidationSchema,
   registerInputValidationSchema,
   sessionInputValidationSchema,
+  customerGetAllInputValidationSchema,
+  customerIdParamInputValidationSchema,
+  updateCustomerInputValidationSchema,  
 } from "./validate";
 
 /**
@@ -15,4 +18,7 @@ export const joiSchemasMap: Record<string, Function> = {
   addSessionInput: sessionInputValidationSchema,
   loginInput: loginInputValidationSchema,
   registerInput: registerInputValidationSchema,
+  customerGetAllInput: customerGetAllInputValidationSchema,
+  customerIdParamInput: customerIdParamInputValidationSchema,
+  updateCustomerInput: updateCustomerInputValidationSchema,
 };

@@ -24,23 +24,11 @@ export const urls = {
     login: () => routeCreator("login", "post"),
     register: () => routeCreator("register", "post"),
   },
-  // auth: {
-  //   check: () => routeCreator("check"),
-  //   reInviteUser: () => routeCreator("re-invite", "post"),
-  //   googleLoginAuth: () => routeCreator("google"),
-  //   googleLoginCallbackAuth: () => routeCreator("google/callback"),
-  //   createAuth: () => routeCreator("signup", "post"),
-  //   loginAuth: () => routeCreator("login", "post"),
-  //   verifyOtpAuth: () => routeCreator("verify/login", "post"),
-  //   approveOrRejectAuth: () => routeCreator("approve/reject/account", "post"),
-  //   accountSetupAuth: () => routeCreator("account-setup", "post"),
-  //   changePasswordAuth: () => routeCreator("change-password", "post"),
-  //   logOutAuth: () => routeCreator("logout", "post"),
-  //   verifyForgotPasswordAuth: () =>
-  //     routeCreator("verify/forgot-password-token", "post"),
-  //   verifyAccountSetUpTokenAuth: () =>
-  //     routeCreator("verify/account-setup-token", "post"),
-  //   refreshTokenAuth: () => routeCreator("refresh-token", "post"),
-  //   forgotPasswordAuth: () => routeCreator("forgot/password", "post"),
-  // },
+  customer: {
+  getCustomers: () => routeCreator("customer", "get"),
+  getCustomerById: () => routeCreator("customer/:id", "get"),
+  updateCustomer: () => routeCreator("customer/:id", "patch"),
+  deleteCustomer: () => routeCreator("customer/:id", "delete"),
+},
+
 };

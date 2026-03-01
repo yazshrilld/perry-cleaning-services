@@ -288,6 +288,39 @@ const sessionInputValidationSchema = (): Joi.ObjectSchema =>
       }),
   });
 
+  const customerGetAllInputValidationSchema = (data: any) => {
+  const schema = Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    size: Joi.number().integer().min(1).max(100).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+    search: Joi.string().allow("").optional(),
+    gSearch: Joi.string().allow("").optional(),
+  });
+  return schema.validate(data.query || {});
+};
+
+const customerIdParamInputValidationSchema = (data: any) => {
+  const schema = Joi.object({
+    id: Joi.string().required(),
+  });
+  return schema.validate(data.params || {});
+};
+
+const updateCustomerInputValidationSchema = (data: any) => {
+  const schema = Joi.object({
+    username: Joi.string().optional(),
+    firstName: Joi.string().optional(),
+    lastName: Joi.string().optional(),
+    phone: Joi.string().optional(),
+    address: Joi.string().optional(),
+    country: Joi.string().optional(),
+    picture: Joi.string().optional(),
+    name: Joi.string().optional(),
+  }).min(1);
+  return schema.validate(data.body || {});
+};
+
+
 export {
   ValidateviewAllValidation,
   ValidateEncrtptedValidation,
@@ -300,4 +333,7 @@ export {
   inputRequestShouldBeEncrypted,
   sessionInputValidation,
   sessionInputValidationSchema,
+  customerGetAllInputValidationSchema,
+  customerIdParamInputValidationSchema,
+  updateCustomerInputValidationSchema,
 };

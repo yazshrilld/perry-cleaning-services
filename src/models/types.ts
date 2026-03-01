@@ -32,6 +32,8 @@ export type usersSchemaType = Document &
     roles?: string[];
     lastLogin?: Date;
     isActive?: boolean;
+    deletedAt?: Date | null;
+    deletedBy?: string | null; 
   };
 
 export type sessionSchemaType = Document &

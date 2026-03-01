@@ -8,6 +8,9 @@ import {
   loginInputValidationSchema,
   registerInputValidationSchema,
   sessionInputValidation,
+  customerGetAllInputValidationSchema,
+  customerIdParamInputValidationSchema,
+  updateCustomerInputValidationSchema
 } from "../utils/validate";
 
 const createValidationMiddleware = (
@@ -21,22 +24,11 @@ const createValidationMiddleware = (
     let message = "Fatal error occurred";
 
     try {
-      ////// console.log("Targets for validation req------:", req);
-      // Combine multiple targets into a single object
       const dataToValidate: Record<string, any> = {};
       if (targets.includes("body")) dataToValidate.body = req.body;
       if (targets.includes("query")) dataToValidate.query = req.query;
       if (targets.includes("params")) dataToValidate.params = req.params;
       if (targets.includes("files")) dataToValidate.files = req.files;
-      // let dataToValidate;
-
-      // if (target === "body") {
-      //   dataToValidate = req.body;
-      // } else if (target === "query") {
-      //   dataToValidate = req.query;
-      // } else {
-      //   dataToValidate = req.params;
-      // }
 
       const { error } = validationFn(dataToValidate);
       if (error) {
@@ -82,15 +74,21 @@ const registerInput = createValidationMiddleware(
   ["body"],
 );
 
-// const validateLoginAuthRequest = createValidationMiddleware(
-//   loginAuthInputValidation,
-//   ["body"],
-// );
+const customerGetAllInput = createValidationMiddleware(
+  customerGetAllInputValidationSchema,
+  ["query"],
+);
 
-// const validateCreateUsersRequest = createValidationMiddleware(
-//   addusersInputValidation,
-//   ["body"],
-// );
+const customerIdParamInput = createValidationMiddleware(
+  customerIdParamInputValidationSchema,
+  ["params"],
+);
+
+const updateCustomerInput = createValidationMiddleware(
+  updateCustomerInputValidationSchema,
+  ["body"],
+);
+
 
 const verifyMiddleware = {
   validateEncrtptedInput,
@@ -98,6 +96,9 @@ const verifyMiddleware = {
   addSessionInput,
   loginInput,
   registerInput,
+  customerGetAllInput,
+  customerIdParamInput,
+  updateCustomerInput,
 };
 
 export { verifyMiddleware };

@@ -21,6 +21,17 @@
  *   post:
  *     summary: encrytData
  *     tags: [health]
+ *     
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             {
+ *               "type": "object",
+ *               "description": "Plain JSON payload to encrypt (any object).",
+ *               "additionalProperties": true
+ *             }
  *     responses:
  *       200:
  *         description: Success
@@ -37,6 +48,25 @@
  *   post:
  *     summary: decryptData
  *     tags: [health]
+ *     
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             {
+ *               "type": "object",
+ *               "properties": {
+ *                 "textData": {
+ *                   "type": "string",
+ *                   "description": "Encrypted payload returned by /health/encrypt"
+ *                 }
+ *               },
+ *               "required": [
+ *                 "textData"
+ *               ],
+ *               "additionalProperties": false
+ *             }
  *     responses:
  *       200:
  *         description: Success
@@ -158,9 +188,6 @@
  *               ],
  *               "additionalProperties": false
  *             }
- *         text/plain:
- *           schema:
- *             type: string
  *     responses:
  *       200:
  *         description: Success
@@ -304,22 +331,43 @@
  *     
  *     requestBody:
  *       required: true
+ *       description: |
+ *         Plain (unencrypted) payload schema:
+ *         {
+ *           "type": "object",
+ *           "properties": {
+ *             "emailOrUsername": {
+ *               "type": "string"
+ *             },
+ *             "password": {
+ *               "type": "string"
+ *             }
+ *           },
+ *           "required": [
+ *             "emailOrUsername",
+ *             "password"
+ *           ],
+ *           "additionalProperties": false
+ *         }
+ *         
+ *         Copy-ready example (encrypt this object):
+ *         {
+ *           "emailOrUsername": "string",
+ *           "password": "string"
+ *         }
  *       content:
  *         application/json:
  *           schema:
  *             {
  *               "type": "object",
  *               "properties": {
- *                 "emailOrUsername": {
- *                   "type": "string"
- *                 },
- *                 "password": {
- *                   "type": "string"
+ *                 "textData": {
+ *                   "type": "string",
+ *                   "description": "Encrypted payload as text"
  *                 }
  *               },
  *               "required": [
- *                 "emailOrUsername",
- *                 "password"
+ *                 "textData"
  *               ],
  *               "additionalProperties": false
  *             }
@@ -357,46 +405,218 @@
  *     
  *     requestBody:
  *       required: true
+ *       description: |
+ *         Plain (unencrypted) payload schema:
+ *         {
+ *           "type": "object",
+ *           "properties": {
+ *             "username": {
+ *               "type": "string"
+ *             },
+ *             "firstName": {
+ *               "type": "string"
+ *             },
+ *             "lastName": {
+ *               "type": "string"
+ *             },
+ *             "email": {
+ *               "type": "string",
+ *               "format": "email"
+ *             },
+ *             "phone": {
+ *               "type": "string"
+ *             },
+ *             "password": {
+ *               "type": "string",
+ *               "minLength": 6
+ *             },
+ *             "role": {
+ *               "type": "string"
+ *             }
+ *           },
+ *           "required": [
+ *             "username",
+ *             "firstName",
+ *             "lastName",
+ *             "email",
+ *             "phone",
+ *             "password"
+ *           ],
+ *           "additionalProperties": false
+ *         }
+ *         
+ *         Copy-ready example (encrypt this object):
+ *         {
+ *           "username": "string",
+ *           "firstName": "string",
+ *           "lastName": "string",
+ *           "email": "string",
+ *           "phone": "string",
+ *           "password": "string",
+ *           "role": "string"
+ *         }
  *       content:
  *         application/json:
  *           schema:
  *             {
  *               "type": "object",
  *               "properties": {
- *                 "username": {
- *                   "type": "string"
- *                 },
- *                 "firstName": {
- *                   "type": "string"
- *                 },
- *                 "lastName": {
- *                   "type": "string"
- *                 },
- *                 "email": {
+ *                 "textData": {
  *                   "type": "string",
- *                   "format": "email"
- *                 },
- *                 "phone": {
- *                   "type": "string"
- *                 },
- *                 "password": {
- *                   "type": "string",
- *                   "minLength": 6
- *                 },
- *                 "role": {
- *                   "type": "string"
+ *                   "description": "Encrypted payload as text"
  *                 }
  *               },
  *               "required": [
- *                 "username",
- *                 "firstName",
- *                 "lastName",
- *                 "email",
- *                 "phone",
- *                 "password"
+ *                 "textData"
  *               ],
  *               "additionalProperties": false
  *             }
+ *     security:
+ *       - bearerAuth: []
+ *       - signatureAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ */
+        
+
+/**
+ * @swagger
+ * /api/perrycleans/customer/customer:
+ *   get:
+ *     summary: getCustomers
+ *     tags: [customer]
+ *     parameters:
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
+ *       - in: header
+ *         name: authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Authorization"
+ *     security:
+ *       - bearerAuth: []
+ *       - signatureAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ */
+        
+
+/**
+ * @swagger
+ * /api/perrycleans/customer/customer/{id}:
+ *   get:
+ *     summary: getCustomerById
+ *     tags: [customer]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: id
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
+ *       - in: header
+ *         name: authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Authorization"
+ *     security:
+ *       - bearerAuth: []
+ *       - signatureAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ */
+        
+
+/**
+ * @swagger
+ * /api/perrycleans/customer/customer/{id}:
+ *   patch:
+ *     summary: updateCustomer
+ *     tags: [customer]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: id
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
+ *       - in: header
+ *         name: authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Authorization"
+ *     security:
+ *       - bearerAuth: []
+ *       - signatureAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ */
+        
+
+/**
+ * @swagger
+ * /api/perrycleans/customer/customer/{id}:
+ *   delete:
+ *     summary: deleteCustomer
+ *     tags: [customer]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: id
+ *       - in: header
+ *         name: signature
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
+ *       - in: header
+ *         name: authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: "Authorization"
  *     security:
  *       - bearerAuth: []
  *       - signatureAuth: []

@@ -208,3 +208,162 @@ backend, and how it fits into the middleware flow.
 - For encrypted endpoints, Swagger includes the plain (unencrypted) payload
   schema in the requestBody description so frontend teams can see what to
   encrypt before calling the endpoint.
+
+  # Steps to Implement Customers
+
+This document contains a step-by-step plan to implement Customers endpoints in
+the backend, following the same structure used for Login.
+
+## Scope and Endpoints
+
+Implement these endpoints:
+
+1. `GET /customers` (admin/super_admin)
+2. `GET /customers/:id` (admin/super_admin or owner)
+3. `PATCH /customers/:id` (owner, admin, super_admin)
+4. `DELETE /customers/:id` (admin/super_admin, soft-delete)
+
+## Decisions Confirmed
+
+1. Customer is a user with role data:
+
+- `role: "customer"` and/or `roles: ["customer"]`
+- No separate customer collection for now.
+
+2. Auth middleware:
+
+- `general.ts` already injects `USER_ROLES` (and should also expose `USER_ID`
+  for ownership checks).
+
+3. Soft-delete fields:
+
+- Not present yet; this plan adds them to user model.
+
+## Ordered Implementation Steps
+
+1. Prep and model alignment
+
+- Confirm `general.ts` provides both `req.USER_ROLES` and `req.USER_ID`.
+- Keep customer scope as role-filtered users collection.
+
+2. Update User model for soft delete
+
+- Update `src/models/users.ts` with:
+- `isActive: boolean` (default `true`)
+- `deletedAt?: Date | null`
+- `deletedBy?: ObjectId | null`
+- Keep backward compatibility for existing users (default active).
+
+3. Add/confirm TypeScript types
+
+- Update `src/models/types.ts` with:
+- `CustomerSafeResponse`
+- `GetCustomersQuery`
+- `UpdateCustomerInput`
+- `CustomerParams` (`id`)
+- Include strong typing for `isActive`, `deletedAt`, `deletedBy`.
+
+4. Validation schemas
+
+- Add in `src/utils/validate.ts`:
+- `getCustomersQueryInput` (`page`, `limit`, `search`)
+- `customerIdParamInput` (`id`)
+- `updateCustomerInput` (allowed editable fields only: e.g. `firstName`,
+  `lastName`, `phone`, `username`)
+- Register in `src/utils/joiSchemasMap.ts`.
+
+5. Create customer service
+
+- Create `src/services/model/customer.ts` with:
+- `listCustomers(query)` (admin/super_admin list only customer-role users,
+  exclude soft-deleted by default)
+- `getCustomerById(id)` (must be customer-role user)
+- `updateCustomer(id, payload, actorId?)`
+- `softDeleteCustomer(id, actorId)` (`isActive=false`, set `deletedAt`,
+  `deletedBy`)
+- `sanitizeCustomer(user)` (never return password)
+
+6. Ownership and permission helpers
+
+- Reuse `hasPermission(['admin', 'super_admin'])` where available.
+- Add owner/admin helper for `:id` endpoints:
+- allow if `req.USER_ID === req.params.id` OR role includes `admin/super_admin`.
+
+7. Implement customers controller
+
+- Create `src/controllers/customers.ts`:
+- `getCustomers`
+- `getCustomerById`
+- `patchCustomer`
+- `deleteCustomer`
+- Enforce endpoint-level authorization and return sanitized payloads.
+
+8. Add customers router
+
+- Create `src/routers/customers.ts`:
+- `GET /customers`
+- `GET /customers/:id`
+- `PATCH /customers/:id`
+- `DELETE /customers/:id`
+- Middleware order:
+- `general` auth
+- validation middleware
+- permission/ownership guard
+- controller
+
+9. Register router
+
+- Mount customers router in router index or `app.ts` under API prefix.
+
+10. Prevent unsafe updates
+
+- Block updates to sensitive fields:
+- `password`, `roles`, `role`, `email` (if policy says immutable), `lastLogin`,
+  delete flags.
+- Enforce allowlist updates only.
+
+11. Response format consistency
+
+- List: `{ message, data, pagination }`
+- Single: `{ message, data }`
+- Update/Delete: `{ message, data }`
+- Keep same success/error style as auth module.
+
+12. Logging and audit trail
+
+- Log admin/super_admin updates and deletes with actor and target IDs.
+- Include reason metadata later if needed.
+
+13. Tests
+
+- Service tests:
+- list filters customer users
+- get-by-id returns only customer users
+- update respects allowlist
+- soft-delete marks inactive
+- Controller/integration tests:
+- admin/super_admin can list
+- customer cannot list
+- owner can get/patch self
+- non-owner customer cannot get/patch others
+- admin/super_admin can soft-delete
+- deleted customer handling behavior is consistent
+
+14. Swagger/docs
+
+- Add customers endpoints to swagger route config.
+- Document role rules and soft-delete behavior.
+- Include sample request/response for each endpoint.
+
+15. Manual QA checklist
+
+- Admin login: list/get/update/delete customer works.
+- Customer login: can get/update own profile only.
+- Customer login: cannot list all customers.
+- Deleted customer no longer appears in default list.
+
+16. Security hardening follow-up
+
+- Add pagination caps (`limit` max).
+- Add request rate-limit on update/delete endpoints if needed.
+- Optionally add `updatedBy` for full audit lineage.
