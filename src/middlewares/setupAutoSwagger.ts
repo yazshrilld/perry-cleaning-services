@@ -88,25 +88,25 @@ const exampleValueForSchema = (schema: any): any => {
   if (!schema || typeof schema !== "object") return "string";
   if (schema.example !== undefined) return schema.example;
   switch (schema.type) {
-    case "string":
-      return "string";
-    case "integer":
-    case "number":
-      return 0;
-    case "boolean":
-      return true;
-    case "array":
-      return [exampleValueForSchema(schema.items || { type: "string" })];
-    case "object": {
-      const obj: Record<string, any> = {};
-      const props = schema.properties || {};
-      for (const [key, propSchema] of Object.entries(props)) {
-        obj[key] = exampleValueForSchema(propSchema);
-      }
-      return obj;
+  case "string":
+    return "string";
+  case "integer":
+  case "number":
+    return 0;
+  case "boolean":
+    return true;
+  case "array":
+    return [exampleValueForSchema(schema.items || { type: "string" })];
+  case "object": {
+    const obj: Record<string, any> = {};
+    const props = schema.properties || {};
+    for (const [key, propSchema] of Object.entries(props)) {
+      obj[key] = exampleValueForSchema(propSchema);
     }
-    default:
-      return "string";
+    return obj;
+  }
+  default:
+    return "string";
   }
 };
 
@@ -233,8 +233,8 @@ const generateSwaggerComments = (): string => {
             headerName === "signature"
               ? "Format: <sha512_hex>;<tags>. UTC minute-window signature with replay protection."
               : headerName
-                  .replace(/-/g, " ")
-                  .replace(/^./, (c) => c.toUpperCase());
+                .replace(/-/g, " ")
+                .replace(/^./, (c) => c.toUpperCase());
 
           const yamlSafeDescription = JSON.stringify(description);
 
@@ -360,19 +360,19 @@ ${schemaYaml}`;
             : null;
           const plainSchemaDescription = joiSwaggerSchema
             ? `\n *       description: |\n *         Plain (unencrypted) payload schema:\n${JSON.stringify(
-                joiSwaggerSchema,
-                null,
-                2,
-              )
-                .split("\n")
-                .map((line) => ` *         ${line}`)
-                .join("\n")}`
+              joiSwaggerSchema,
+              null,
+              2,
+            )
+              .split("\n")
+              .map((line) => ` *         ${line}`)
+              .join("\n")}`
             : "";
           const exampleDescription = exampleJson
             ? `\n *         \n *         Copy-ready example (encrypt this object):\n${exampleJson
-                .split("\n")
-                .map((line) => ` *         ${line}`)
-                .join("\n")}`
+              .split("\n")
+              .map((line) => ` *         ${line}`)
+              .join("\n")}`
             : "";
 
           requestBodySection = `
@@ -564,7 +564,7 @@ export const setupAutoSwagger = (app: Express) => {
             if (signature) {
               req.headers.signature = signature;
             }
-          } catch (_e) {
+          } catch {
             // do not block swagger requests if signature helper fails
           }
 
